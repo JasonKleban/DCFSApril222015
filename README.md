@@ -8,6 +8,6 @@ Do the following:
 
      > build.sh
 
-Browse to [http://localhost:8083/dcfs-April-22-2015.html#/]
+Browse to [http://localhost:8083/dcfs-April-22-2015.html](http://localhost:8083/dcfs-April-22-2015.html) or whatever.
 
 Yay!
