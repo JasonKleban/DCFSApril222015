@@ -412,8 +412,8 @@ module doubleall_attempt_2 =
 *)
     let double = (*) 2
     let fandcons f el list = _Node (f el) list
-    let doubleandthen = fandcons double
-    let doubleall l = foldr doubleandthen End l
+    let doubleandcons = fandcons double
+    let doubleall l = foldr doubleandcons End l
 
     doubleall (Of [1;2;3])
         |> printfn "%A"
@@ -429,8 +429,8 @@ module doubleall_attempt_3 =
 *)
     let double = (*) 2
     let fandcons f = _Node << f
-    let doubleandthen = fandcons double
-    let doubleall l = foldr doubleandthen End l
+    let doubleandcons = fandcons double
+    let doubleall l = foldr doubleandcons End l
 
     doubleall (Of [1;2;3])
         |> printfn "%A"
@@ -451,10 +451,10 @@ doubleall (Of [1;2;3])
 (*** define-output: sumMatrix ***)
 let sumMatrix = sum << map sum
 
-sumMatrix (Of
-    [(Of [1;2;3]);
+Of  [(Of [1;2;3]);
      (Of [4;5;6]);
-     (Of [7;8;9])])
+     (Of [7;8;9])]
+    |> sumMatrix
     |> printfn "%A"
     
 (*** include-output: sumMatrix ***)
@@ -467,24 +467,24 @@ module list_final =
 (**
 </div>
 *)
-    let count a n = n + 1
-    let double = (*) 2
-
-    let rec foldr op unit l = 
-        match l with 
-        | End -> unit
-        | Node (head, tail) -> op head (foldr op unit tail)
-
-    let sum =           foldr (+)           0
-    let product =       foldr (*)           1
-    let anyTrue =       foldr (||)          false
-    let allTrue =       foldr (&&)          true
-    let copy l =        foldr (_Node)       End     l
-    let append a b =    foldr (_Node)       b       a
-    let length l =      foldr count         0       l
-    let map f =         foldr (_Node << f)  End
-
-    let doubleall l = map double l
+ let count a n = n + 1
+ let double = (*) 2
+ 
+ let rec foldr op unit l = 
+     match l with 
+     | End -> unit
+     | Node (head, tail) -> op head (foldr op unit tail)
+ 
+ let sum =           foldr (+)           0
+ let product =       foldr (*)           1
+ let anyTrue =       foldr (||)          false
+ let allTrue =       foldr (&&)          true
+ let copy l =        foldr (_Node)       End     l
+ let append a b =    foldr (_Node)       b       a
+ let length l =      foldr count         0       l
+ let map f =         foldr (_Node << f)  End
+ 
+ let doubleall l = map double l
     
 (**
 ***
@@ -516,29 +516,30 @@ module trees_v1 =
 type 'T Tree =
     | Tree of label : 'T * leaves : 'T Tree list
 
-Tree(1,
-    [Tree(2, []);
-     Tree(3, 
-        [Tree(4, [])])
-    ])
+Tree (1,[ 
+        Tree (2,[]);
+        Tree (3,[
+                Tree (4,[])])])
     |> printfn "%A"
     
 (**---*)
 
-(*** define-output: sumtree ***)
-let rec foldtree f g a (Tree(label, subtrees)) = f label (foldleaves f g a subtrees)
+let rec foldtree f g a (Tree(label, subtrees)) = 
+    f label (foldleaves f g a subtrees)
 and foldleaves f g a (l : 'T Tree list) = 
     match l with  
-    | (subtree :: rest) -> g (foldtree f g a subtree) (foldleaves f g a rest)
+    | (subtree :: rest) -> 
+        g (foldtree f g a subtree) (foldleaves f g a rest)
     | [] -> a
-
+    
+(**---*)
+(*** define-output: sumtree ***)
 let sumtree = foldtree (+) (+) 0
 
-Tree(1,
-    [Tree(2, []);
-     Tree(3, 
-        [Tree(4, [])])
-    ])
+Tree (1,[ 
+        Tree (2,[]);
+        Tree (3,[
+                Tree (4,[])])])
     |> sumtree
     |> printfn "%A"
     
@@ -546,12 +547,17 @@ Tree(1,
 (**---*)
 
 (*** define-output: labels ***)
-let labels t = foldtree (fun c a -> c :: a) (List.append) [] t
-
-Tree(1,
-    [Tree(2, []);
-     Tree(3, 
-        [Tree(4, [])])
+let labels t = 
+    foldtree 
+        (fun c a -> c :: a) 
+        (List.append) 
+        [] 
+        t
+        
+Tree (1,[ 
+        Tree (2,[]);
+        Tree (3,[
+                Tree (4,[])])])
     ])
     |> labels
     |> printfn "%A"
@@ -560,12 +566,16 @@ Tree(1,
 (**---*)
 
 (*** define-output: labels ***)
-let maptree f = foldtree ((fun v l -> Tree(v,l)) << f) (fun c a -> c :: a) []
-
-Tree(1,
-    [Tree(2, []);
-     Tree(3, 
-        [Tree(4, [])])
+let maptree f = 
+    foldtree 
+        ((fun v l -> Tree(v,l)) << f) 
+        (fun c a -> c :: a) 
+        []
+        
+Tree (1,[ 
+        Tree (2,[]);
+        Tree (3,[
+                Tree (4,[])])])
     ])
     |> maptree double
     |> printfn "%A"
@@ -580,15 +590,17 @@ module tree_final =
 (**
 </div>
 *)
-    let rec foldtree f g a (Tree(label, subtrees)) = f label (foldleaves f g a subtrees)
-    and foldleaves f g a (l : 'T Tree list) = 
-        match l with  
-        | (subtree :: rest) -> g (foldtree f g a subtree) (foldleaves f g a rest)
-        | [] -> a
-
-    let sumtree =   foldtree (+)                            (+)                 0
-    let labels t =  foldtree (fun c a -> c :: a)            (List.append)       []      t
-    let maptree f = foldtree ((fun v l -> Tree(v,l)) << f)  (fun c a -> c :: a) []
+ let rec foldtree f g a (Tree(label, subtrees)) = 
+     f label (foldleaves f g a subtrees)
+ and foldleaves f g a (l : 'T Tree list) = 
+     match l with  
+     | (subtree :: rest) -> 
+         g (foldtree f g a subtree) (foldleaves f g a rest)
+     | [] -> a
+ 
+ let sumtree =   foldtree (+)                            (+)                 0
+ let labels t =  foldtree (fun c a -> c :: a)            (List.append)       []      t
+ let maptree f = foldtree ((fun v l -> Tree(v,l)) << f)  (fun c a -> c :: a) []
       
 (**
 ***
