@@ -2,7 +2,7 @@
 - title : 
 - description : Pre-show - F# reintroduction
 - author : Jason Kleban
-- theme : Night
+- theme : League
 - transition : default
 
 ***
@@ -77,6 +77,7 @@ In turn, these concepts will lead you to:
 
 ---
 
+    [lang=cs]
     for (var i = 0; i < elements.length; i++)
     {
         // something with elements[i]
@@ -85,10 +86,11 @@ In turn, these concepts will lead you to:
 
 ---
 
+    [lang=cs]
     foreach (var element in elements)
     {
         // something with element
-        Console.Writeline("{0}", elements[i].ToString());
+        Console.Writeline("{0}", element.ToString());
     }
 
 ' elements : IEnumerable<T> which can be recognized as the Iterator design **pattern**
@@ -96,11 +98,12 @@ In turn, these concepts will lead you to:
 
 ---
     
+    [lang=cs]
     var i = 0;
     foreach (var element in elements)
     {
         // something with element
-        Console.Writeline("{0}: {1}", i, elements[i].ToString());
+        Console.Writeline("{0}: {1}", i, element.ToString());
         i++;
     }
 
@@ -110,6 +113,7 @@ In turn, these concepts will lead you to:
 
 ' anyway, forget the `i`.  Let's nest the loops and have some condition
 
+    [lang=cs]
     foreach (var element in elements)
     {
         if (threshold <= element.level)
@@ -123,6 +127,7 @@ In turn, these concepts will lead you to:
 
 ---
     
+    [lang=cs]
     var filteredElements = new List<Element>();
     
     foreach (var element in elements)
@@ -145,12 +150,13 @@ In turn, these concepts will lead you to:
 
 ---
 
+    [lang=cs]
     var filteredElements = new List<Element>();
     IFilter filter = new ThresholdFilter();
     
     foreach (var element in elements)
     {
-        if (filter.test(element))
+        if (filter.Test(element))
         {
             filteredElements.Add(element);
         }
@@ -168,12 +174,13 @@ In turn, these concepts will lead you to:
 
 ---
 
+    [lang=cs]
     var filteredElements = new List<Element>();
-    Func<Element, bool> filter = element => threshold <= element.level;
+    Func<Element, bool> test = element => threshold <= element.level;
     
     foreach (var element in elements)
     {
-        if (filter(element))
+        if (test(element))
         {
             filteredElements.Add(element);
         }
@@ -191,6 +198,7 @@ In turn, these concepts will lead you to:
 
 ---
 
+    [lang=cs]
     void Run(Func<Element, bool> filter, Action<Subelement> operation)
     {
         var filteredElements = new List<Element>();
@@ -217,6 +225,7 @@ In turn, these concepts will lead you to:
 
 ---
 
+    [lang=cs]
     void Run(Func<Element, bool> filter, Action<Subelement> operation)
     {
         var filteredElements = elements.Where(filter);
@@ -234,15 +243,24 @@ In turn, these concepts will lead you to:
 
 ---
 
+    [lang=cs]
     IEnumerable<Subelement> Process(Func<Element, bool> filter)
     {
         return elements.Where(filter).SelectMany(element => element);
     }
+    
 
 ' Here we shrink further, remove the operation all together and allow the caller to provide the operation after selection, since it no longer has to be
 ' embedded in the loop anyway.
 
 ***
+
+### Why Functional Programming Matters
+
+John Hughes, 1990
+
+---
+
 *)
 
 type 'T LList = 
@@ -558,7 +576,6 @@ Tree (1,[
         Tree (2,[]);
         Tree (3,[
                 Tree (4,[])])])
-    ])
     |> labels
     |> printfn "%A"
     
@@ -576,7 +593,6 @@ Tree (1,[
         Tree (2,[]);
         Tree (3,[
                 Tree (4,[])])])
-    ])
     |> maptree double
     |> printfn "%A"
 
@@ -603,6 +619,113 @@ module tree_final =
  let maptree f = foldtree ((fun v l -> Tree(v,l)) << f)  (fun c a -> c :: a) []
       
 (**
+
+***
+
+    [lang=csharp]
+    public abstract class LList<T>
+    {
+        internal static readonly LList<T> _unique_End = new LList<T>._End();
+
+        public class Node : LList<T>
+        {
+            internal readonly T _head;
+            internal readonly LList<T> _tail;
+
+            public T head { get { return this._head; } }
+            public LList<T> tail { get { return this._tail; } }
+
+            internal Node(T _head, LList<T> _tail)
+            {
+                this._head = _head;
+                this._tail = _tail;
+            }
+        }
+
+        internal class _End : LList<T>
+        { internal _End() { } }
+
+        public static LList<T> NewNode(T _head, LList<T> _tail)
+        { return new LList<T>.Node(_head, _tail); }
+        public static LList<T> End { get { return LList<T>._unique_End; } }
+
+        public bool IsNode { get { return this is LList<T>.Node; } }
+        public bool IsEnd { get { return this is LList<T>._End; } }
+    }  
+*)
+
+// type 'T LList = 
+//   | Node of head : 'T * tail : 'T LList
+//   | End
+
+(**
+    
+---
+
+    [lang=csharp]
+    static U Foldr<T, U>(Func<T, U, U> op, U unit, LList<T> list)
+    {
+        var node = list as LList<T>.Node;
+
+        if (node != null)
+        {
+            return op(
+                node._head, 
+                Foldr<T, U>(op, unit, node._tail));
+        }
+        return unit;
+    }
+
+    //       let rec foldr op unit = function
+    //           | End -> unit
+    //           | Node (head, tail) -> op head (foldr op unit tail)
+    
+---
+
+    [lang=csharp]
+    static int Sum(LList<int> list)
+    {
+        return Foldr(
+            (a, b) => a + b, 
+            0, 
+            list);
+    }
+
+    //     let sum = foldr (+) 0
+    
+---
+
+    [lang=csharp]
+    static int Product(LList<int> list)
+    {
+        return Foldr(
+            (a, b) => a * b,
+            1,
+            list);
+    }
+
+
+    //     let product = foldr (*) 1
+
+---
+
+    [lang=csharp]
+    var l = LList<int>.NewNode(3,
+        LList<int>.NewNode(4,
+        LList<int>.NewNode(5, LList<int>.End)));
+
+    Console.WriteLine(Sum(l));
+
+    Console.WriteLine(Product(l));
+*)
+
+let l = Node (3, Node (4, Node (5, End)))
+
+printfn "%A" (sum l)
+printfn "%A" (product l)
+
+(**
+
 ***
 
 ### F# Syntax Recap
@@ -613,5 +736,18 @@ module tree_final =
   The syntax may look weird, but it isn't about saving keystrokes or space!
   Functional programming is beautifully consistent.
   F# and other implementations aren't perfectly consistent but they try.
+
+***
+
+### Neat projects
+
+* Type Providers
+* Akka.net
+* WebSharper
+* MBrace
+* Freya
+* Coeffects research by Tomas Petricek
+* FCell
+* LinqPad 5
 
 *)
