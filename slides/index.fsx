@@ -7,7 +7,9 @@
 
 ***
 
-### Why is functional programming relevant?
+### Why functional programming?
+
+Jason Kleban
 
 ---
 
